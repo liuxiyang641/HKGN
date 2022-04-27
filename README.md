@@ -1,7 +1,7 @@
 # Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding 
 
 ## Overview
-![The architecture of HKGN.](model.png)
+<img src="model.png" alt="The architecture of HKGN." style="zoom:40%;" />
 
 ## Training the model
 

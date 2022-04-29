@@ -20,7 +20,7 @@ unzip data_compressed/FB15k-237.zip -d data/
 unzip data_compressed/WN18RR.zip -d data/
 ```
 
-Then you will get all essential data to reproduce results reportd in the paper.
+Then you will get all the essential data to reproduce the results reported in the paper.
 
 **FB15k-237**
 
@@ -67,7 +67,7 @@ Subsets divided by entity degrees:
 - Python 3.x
 - torch-scatter (make sure to be compatible with your own pytorch version, please refer to [torch-scatter](https://github.com/rusty1s/pytorch_scatter))
 - tqdm
-- Pytorch >= 1.5.0
+- PyTorch >= 1.5.0
 - [ordered-set](https://pypi.org/project/ordered-set/)
 - numpy
 
@@ -75,7 +75,7 @@ Dependencies can be installed using `requirements.txt`.
 
 ## Training the model
 
-To get the best performance we have found:
+To reproduce the best performance we have found:
 
 ```bash
 # default dataset: FB15k-237
@@ -104,14 +104,14 @@ The detailed hyperparameters:
 |         Learning rate         |            0.001            | 0.001  |
 |        Lable smoothing        |             0.1             |  0.1   |
 
-Customize the training strategies (**parallel** and **iterative**) for multi-relational knowledge graphs by setting argument `-exp`: 
+Customize the training strategies (**parallel** and **iterative**) for multi-relational knowledge graphs by setting the argument `-exp`: 
 
 - `hyper_mr_parallel`: Performing all single-relational graph convolution simultaneously (default). High GPU memory footprints and quick training speed.
 - `hyper_mr_iter`: Performing different single-relational graph convolution iteratively. Lower GPU memory requirements and slower training speed.
 
-If you got out of memory error, try to clear cached memory by pass argument: `-empty_gpu_cache`.
+If you got out of memory error, try to clear cached memory by passing the argument: `-empty_gpu_cache`.
 
-The learned model will be automatically saved in directory `/checkpoints`,pass argument `-restore` to resume your saved model, e.g.:
+The learned model will be automatically saved in directory `/checkpoints`, pass the argument `-restore` to resume your saved model, e.g.:
 
 ```bash
 -restore -name your_saved_model_name

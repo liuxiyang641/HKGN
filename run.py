@@ -63,7 +63,7 @@ class Runner(object):
         # self.sr2o only contains edges in train set
         self.sr2o = {k: list(v) for k, v in sr2o.items()}
         # add edges in valid and test set into sr2o
-        for split in ['test', 'valid']:
+        for split in [self.p.test_data, 'valid']:
             for sub, rel, obj in self.data[split]:
                 sr2o[(sub, rel)].add(obj)
                 sr2o[(obj, rel + self.p.num_rel)].add(sub)
@@ -71,8 +71,7 @@ class Runner(object):
         self.sr2o_all = {k: list(v) for k, v in sr2o.items()}
         self.triples = ddict(list)
         # label is a list, because sub->rel can be true in many objs.
-        if self.p.strategy == 'one_to_n' or self.p.strategy == 'one_to_n_origin' \
-                or self.p.strategy == 'one_to_batch_n' or self.p.strategy == 'nscaching':
+        if self.p.strategy == 'one_to_n' or self.p.strategy == 'one_to_n_origin' or self.p.strategy == 'one_to_batch_n':
             for (sub, rel), obj in self.sr2o.items():
                 self.triples['train'].append({'triple': (sub, rel, -1), 'label': self.sr2o[(sub, rel)]})
         elif self.p.strategy == 'one_to_x':
@@ -84,7 +83,7 @@ class Runner(object):
         else:
             raise NotImplementedError
 
-        for split in ['test', 'valid']:
+        for split in [self.p.test_data, 'valid']:
             for sub, rel, obj in self.data[split]:
                 rel_inv = rel + self.p.num_rel
                 self.triples['{}_{}'.format(split, 'tail')].append(
@@ -122,8 +121,8 @@ class Runner(object):
             ),
             'valid_head': get_data_loader(TestDataset, 'valid_head', self.p.test_batch_size),
             'valid_tail': get_data_loader(TestDataset, 'valid_tail', self.p.test_batch_size),
-            'test_head': get_data_loader(TestDataset, 'test_head', self.p.test_batch_size),
-            'test_tail': get_data_loader(TestDataset, 'test_tail', self.p.test_batch_size),
+            'test_head': get_data_loader(TestDataset, self.p.test_data + '_head', self.p.test_batch_size),
+            'test_tail': get_data_loader(TestDataset, self.p.test_data + 'tail', self.p.test_batch_size),
         }
 
         self.edge_index, self.edge_type = self.construct_adj()
@@ -461,6 +460,7 @@ if __name__ == '__main__':
     parser.add_argument('-batch', dest='batch_size', default=1024, type=int, help='Batch size')
     parser.add_argument('-test_batch', dest='test_batch_size', default=2048, type=int, help='Batch size for '
                                                                                             'validating and testing')
+    parser.add_argument('-test_data', default='test', help=r'The data file(.txt) used to test the model\'s performance')
     parser.add_argument('-gamma', type=float, default=40.0, help='Margin')
     parser.add_argument('-gpu', type=str, default='0', help='Set GPU Ids : Eg: For CPU = -1, For Single GPU = 0')
     parser.add_argument('-empty_gpu_cache', dest='empty_gpu_cache', help='Whether to empty the GPU memory cached by '

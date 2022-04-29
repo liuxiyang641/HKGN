@@ -2,9 +2,9 @@ from helper import *
 from model.hyper_conv_layer import HyperGCNConv
 
 
-class BaseGCN(torch.nn.Module):
+class GCNEncoder(torch.nn.Module):
     def __init__(self, edge_index, edge_type, num_rel, params=None, logger=None):
-        super(BaseGCN, self).__init__()
+        super(GCNEncoder, self).__init__()
 
         self.p = params
         self.act = torch.tanh

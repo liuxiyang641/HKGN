@@ -3,6 +3,14 @@
 ## Overview
 <img src="model.png" alt="The architecture of HKGN." style="zoom:40%;" />
 
+## Data preprocess
+Unzip the compressed datasets.
+```bash
+mkdir data
+unzip data_compressed/FB15k-237.zip -d data/
+unzip data_compressed/WN18RR.zip -d data/
+```
+
 ## Training the model
 
 ```bash

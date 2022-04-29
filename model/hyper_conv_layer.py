@@ -4,7 +4,7 @@ from helper import *
 class HyperGCNConv(torch.nn.Module):
     def __init__(self, edge_index, edge_type, in_channels, out_channels, num_rels, act=lambda x: x, params=None,
                  logger=None, gcn_filt_num=None, base_num=None):
-        super(self.__class__, self).__init__(logger=logger)
+        super(self.__class__, self).__init__()
         self.p = params
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -87,15 +87,6 @@ class HyperGCNConv(torch.nn.Module):
         self.all_edge_type = torch.cat(self.all_edge_type, dim=1)
         self.edge_norm = self.compute_norm(self.all_index, self.num_ent)
 
-        if self.p.strategy == 'one_to_x' or self.p.strategy == 'one_to_batch_n':
-            row, col = self.edge_index
-            edge_weight = torch.ones_like(row).float()
-            deg = scatter_add(edge_weight, row, dim=0, dim_size=self.num_ent)  # Summing number of weights of the edges
-            self.deg_inv = deg.pow(-0.5)  # D^{-0.5}
-            self.deg_inv[self.deg_inv == float('inf')] = 0
-            with open('./data/{}/{}.pkl'.format(self.p.dataset, self.p.dataset), 'rb') as f:
-                self.adj_list = pickle.load(f)
-
     def forward(self, x, rel_embed, sub, rel, neg_ents=None):
         if self.p.experiment == 'gen_ctx_conv_global_wo_r':
             all_conv_weight = self.rel_context.mm(self.w_conv_global).reshape(
@@ -173,3 +164,17 @@ class HyperGCNConv(torch.nn.Module):
         messages = messages.mm(global_weight)
 
         return messages
+
+    def compute_norm(self, edge_index, num_ent):
+        row, col = edge_index
+        edge_weight = torch.ones_like(row).float()
+        deg = scatter_add(edge_weight, row, dim=0, dim_size=num_ent)  # Summing number of weights of the edges
+        deg_inv = deg.pow(-0.5)  # D^{-0.5}
+        deg_inv[deg_inv == float('inf')] = 0
+        norm = deg_inv[row] * edge_weight * deg_inv[col]  # D^{-0.5}
+
+        return norm
+
+    def __repr__(self):
+        return '{}({}, {}, num_rels={})'.format(
+            self.__class__.__name__, self.in_channels, self.out_channels, self.num_rels)

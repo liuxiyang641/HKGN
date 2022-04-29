@@ -1,7 +1,7 @@
 from model.gcn_encoder import *
 
 
-class GCNTransE(BaseGCN):
+class GCNTransE(GCNEncoder):
     def __init__(self, edge_index, edge_type, params=None, logger=None):
         super(self.__class__, self).__init__(edge_index, edge_type, params.num_rel, params, logger)
         self.drop = torch.nn.Dropout(self.p.hid_drop)
@@ -16,7 +16,7 @@ class GCNTransE(BaseGCN):
         return score
 
 
-class GCNDistMulti(BaseGCN):
+class GCNDistMulti(GCNEncoder):
     def __init__(self, edge_index, edge_type, params=None, logger=None):
         super(self.__class__, self).__init__(edge_index, edge_type, params.num_rel, params, logger)
         self.drop = torch.nn.Dropout(self.p.hid_drop)
@@ -32,7 +32,7 @@ class GCNDistMulti(BaseGCN):
         return score
 
 
-class GCNConvE(BaseGCN):
+class GCNConvE(GCNEncoder):
     def __init__(self, edge_index, edge_type, params=None, logger=None):
         super(self.__class__, self).__init__(edge_index, edge_type, params.num_rel, params, logger)
 

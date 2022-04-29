@@ -517,6 +517,11 @@ if __name__ == '__main__':
     if not args.restore:
         args.name = args.name + '_' + time.strftime('%d_%m_%Y') + '_' + time.strftime('%H:%M:%S')
 
+    if not os.path.exists(args.log_dir):
+        os.makedirs(args.log_dir)
+    if not os.path.exists(r'./checkpoints/'):
+        os.makedirs(r'./checkpoints/')
+
     torch.multiprocessing.set_sharing_strategy('file_system')
     set_gpu(args.gpu)
     np.random.seed(args.seed)

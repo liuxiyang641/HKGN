@@ -275,8 +275,8 @@ profile_default/
 ipython_config.py
 
 # Custom setting
-checkpoints/*
-log/*
+/checkpoints
+/log
 .idea/
 /wandb/
-
+/data

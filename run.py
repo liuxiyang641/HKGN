@@ -488,7 +488,7 @@ if __name__ == '__main__':
     parser.add_argument('-layer2_drop', dest='layer2_drop', default=0.3, type=float,
                         help='Dropout after GCN 2-Layer')
 
-    # ConvE specific hyperparameters
+    # ConvE related hyperparameters
     parser.add_argument('-neg_num', dest="neg_num", default=10, type=int,
                         help='Number of negative samples to use for loss calculation')
     parser.add_argument("-strategy", type=str, default='one_to_n', help='Training strategy to use')
@@ -504,7 +504,7 @@ if __name__ == '__main__':
     parser.add_argument('-log_dir', dest='log_dir', default='./log/', help='Log directory')
     parser.add_argument('-log_gpu_mem', dest='log_gpu_mem', help='Whether to print allocated GPU memory')
 
-    # HKGN specific hyperparameters
+    # HKGN related hyperparameters
     parser.add_argument('-exp', dest='experiment', default='hyper_mr_parallel',
                         help='Experiment setting (Parallel/Iterative) of GCN Layer')
     parser.add_argument('-hyper_conv', dest='hyper_conv', default=True, help='Whether to use Hyper_conv')

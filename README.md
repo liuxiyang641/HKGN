@@ -1,7 +1,7 @@
 # Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding
 
 ## Overview
-The source for **HKGN: Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding**.
+The source code for **HKGN: Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding**.
 
 ```
 ├── model

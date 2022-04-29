@@ -71,7 +71,8 @@ class Runner(object):
         self.sr2o_all = {k: list(v) for k, v in sr2o.items()}
         self.triples = ddict(list)
         # label is a list, because sub->rel can be true in many objs.
-        if self.p.strategy == 'one_to_n' or self.p.strategy == 'one_to_n_origin' or self.p.strategy == 'one_to_batch_n' or self.p.strategy == 'nscaching':
+        if self.p.strategy == 'one_to_n' or self.p.strategy == 'one_to_n_origin' \
+                or self.p.strategy == 'one_to_batch_n' or self.p.strategy == 'nscaching':
             for (sub, rel), obj in self.sr2o.items():
                 self.triples['train'].append({'triple': (sub, rel, -1), 'label': self.sr2o[(sub, rel)]})
         elif self.p.strategy == 'one_to_x':
@@ -391,7 +392,9 @@ class Runner(object):
         train_iter = iter(self.data_iter['train'])
 
         for step, batch in tqdm(enumerate(train_iter)):
-            # torch.cuda.empty_cache()
+            # clear cached memory, slower training speed
+            if self.p.empty_gpu_cache and torch.cuda.is_available():
+                torch.cuda.empty_cache()
             self.optimizer.zero_grad()
             sub, rel, obj, label, neg_ent = self.read_batch(batch, 'train')
             pred = self.model.forward(sub, rel, neg_ent)
@@ -399,9 +402,9 @@ class Runner(object):
             loss.backward()
             self.optimizer.step()
             losses.append(loss.item())
-            # self.logger.info(torch.cuda.memory_allocated())
-            # self.logger.info(torch.cuda.max_memory_allocated())
-            # self.logger.info(torch.cuda.memory_reserved())
+            if self.p.log_gpu_mem and torch.cuda.is_available():
+                self.logger.info('Memory allocated {} bytes\n'.format(torch.cuda.max_memory_allocated()))
+                self.logger.info('Memory reserved {} bytes\n'.format(torch.cuda.memory_reserved()))
             # torch.cuda.empty_cache()
         loss = np.mean(losses)
         self.logger.info('[Epoch:{}]:  Training Loss:{:.4}\n'.format(epoch, loss))
@@ -452,7 +455,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-name', default='testrun', help='Set run name for saving/restoring models')
     parser.add_argument('-data', dest='dataset', default='FB15k-237', help='Dataset to use, default: FB15k-237')
-    parser.add_argument('-model', dest='model', default='gen_rgcn', help='GNN model used to encode information')
+    parser.add_argument('-model', dest='model', default='hyper_gcn', help='GNN model used to encode information')
     parser.add_argument('-score_func', dest='score_func', default='conve', help='Score Function for Link prediction')
 
     parser.add_argument('-batch', dest='batch_size', default=1024, type=int, help='Batch size')
@@ -460,6 +463,8 @@ if __name__ == '__main__':
                                                                                             'validating and testing')
     parser.add_argument('-gamma', type=float, default=40.0, help='Margin')
     parser.add_argument('-gpu', type=str, default='0', help='Set GPU Ids : Eg: For CPU = -1, For Single GPU = 0')
+    parser.add_argument('-empty_gpu_cache', dest='empty_gpu_cache', help='Whether to empty the GPU memory cached by '
+                                                                         'pytorch')
     parser.add_argument('-epoch', dest='max_epochs', type=int, default=500, help='Number of epochs')
     parser.add_argument('-l2', type=float, default=0.0, help='L2 Regularization for Optimizer')
     parser.add_argument('-lr', type=float, default=0.001, help='Starting Learning Rate')
@@ -478,7 +483,6 @@ if __name__ == '__main__':
     parser.add_argument('-gcn_layer', dest='gcn_layer', default=1, type=int, help='Number of GCN Layers to use')
     parser.add_argument('-gcn_drop', dest='dropout', default=0.1, type=float, help='Dropout to use in GCN Layer')
     parser.add_argument('-hid_drop', dest='hid_drop', default=0.3, type=float, help='Dropout after GCN')
-    parser.add_argument('-exp', dest='experiment', default='origin', help='Experiment setting of GCN Layer')
     parser.add_argument('-layer1_drop', dest='layer1_drop', default=0.3, type=float,
                         help='Dropout after GCN 1-layer')
     parser.add_argument('-layer2_drop', dest='layer2_drop', default=0.3, type=float,
@@ -496,21 +500,34 @@ if __name__ == '__main__':
                         help='ConvE: Number of filters in convolution')
     parser.add_argument('-ker_sz', dest='ker_sz', default=7, type=int, help='ConvE: Kernel size to use')
 
-    parser.add_argument('-log_dir', dest='log_dir', default='./log/', help='Log directory')
     parser.add_argument('-config', dest='config_dir', default='./config/', help='Config directory')
+    parser.add_argument('-log_dir', dest='log_dir', default='./log/', help='Log directory')
+    parser.add_argument('-log_gpu_mem', dest='log_gpu_mem', help='Whether to print allocated GPU memory')
 
     # HKGN specific hyperparameters
+    parser.add_argument('-exp', dest='experiment', default='hyper_mr_parallel',
+                        help='Experiment setting (Parallel/Iterative) of GCN Layer')
+    parser.add_argument('-hyper_conv', dest='hyper_conv', default=True, help='Whether to use Hyper_conv')
+    parser.add_argument('-hyper_comp', dest='hyper_comp', default=True, help='Whether to use Hyper_comp')
+    parser.add_argument('-hyper_rel', dest='hyper_rel', default=True, help='Whether to use Hyper_rel')
+
     parser.add_argument('-gcn_filt_num_layer1', dest='gcn_filt_num_layer1', default=32, type=int,
                         help='Number of relational kernels used in GCN 1-layer')
-    parser.add_argument('-base_num_layer1', dest='base_num_layer1', default=2, type=int,
-                        help='Dimension of relation embeddings for Hyper.(conv) used in GCN 1-layer')
     parser.add_argument('-gcn_filt_num_layer2', dest='gcn_filt_num_layer2', default=16, type=int,
                         help='Number of relational kernels used in GCN 2-layer')
-    parser.add_argument('-base_num_layer2', dest='base_num_layer2', default=2, type=int,
-                        help='Dimension of relation embeddings for Hyper.(conv) used in GCN 1-layer')
-
     parser.add_argument('-gcn_ker_sz', dest='gcn_ker_sz', default=3, type=int,
                         help='Size of relational kernels')
+
+    parser.add_argument('-dx_layer1', dest='dx_layer1', default=100, type=int,
+                        help='Dimension of relation embeddings for Hyper.(conv) used in GCN 1-layer')
+    parser.add_argument('-dx_layer2', dest='dx_layer2', default=100, type=int,
+                        help='Dimension of relation embeddings for Hyper.(conv) used in GCN 2-layer')
+    parser.add_argument('-dy_layer1', dest='dy_layer1', default=2, type=int,
+                        help='Dimension of relation embeddings for Hyper.(comp) used in GCN 1-layer')
+    parser.add_argument('-dy_layer2', dest='dy_layer2', default=2, type=int,
+                        help='Dimension of relation embeddings for Hyper.(comp) used in GCN 2-layer')
+    parser.add_argument('-dz', dest='dz', default=100, type=int,
+                        help='Dimension of relation embeddings for Hyper.(rel)')
 
     args = parser.parse_args()
 

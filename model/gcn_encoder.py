@@ -20,19 +20,29 @@ class GCNEncoder(torch.nn.Module):
         if self.p.score_func == 'transe':
             self.init_rel = get_param((num_rel, self.p.init_dim))
         else:
-            self.init_rel = get_param((num_rel * 2, self.p.init_dim))
+            if self.p.model == 'hyper_gcn' and not self.p.hyper_rel:
+                self.init_rel = get_param((num_rel * 2, self.p.embed_dim))
+            else:
+                self.init_rel = get_param((num_rel * 2, self.p.dz))
+        # Hypernetworks for target relations
+        if self.p.hyper_rel:
+            self.w_rel = get_param((self.p.dz, self.p.embed_dim))
 
-        if self.p.model == 'gen_rgcn':
+        if self.p.model == 'hyper_gcn':
+            # layer 1
             self.conv1 = HyperGCNConv(self.edge_index, self.edge_type, self.p.init_dim, self.p.gcn_dim, num_rel,
                                       act=self.act, params=self.p, logger=logger,
                                       gcn_filt_num=self.p.gcn_filt_num_layer1,
-                                      base_num=self.p.base_num_layer1)
-            self.conv2 = HyperGCNConv(self.edge_index, self.edge_type, self.p.gcn_dim, self.p.embed_dim, num_rel,
-                                      act=self.act, params=self.p, logger=logger,
-                                      gcn_filt_num=self.p.gcn_filt_num_layer2,
-                                      base_num=self.p.base_num_layer2) if self.p.gcn_layer == 2 else None
+                                      dx_size=self.p.dx_layer1, dy_size=self.p.dy_layer1)
+            # layer 2
+            if self.p.gcn_layer == 2:
+                self.conv2 = HyperGCNConv(self.edge_index, self.edge_type, self.p.gcn_dim, self.p.embed_dim, num_rel,
+                                          act=self.act, params=self.p, logger=logger,
+                                          gcn_filt_num=self.p.gcn_filt_num_layer2,
+                                          dx_size=self.p.dx_layer2, dy_size=self.p.dy_layer2)
+            else:
+                self.conv2 = None
         self.register_parameter('bias', Parameter(torch.zeros(self.p.num_ent)))
-        self.w_rel = get_param((self.p.init_dim, self.p.embed_dim))
 
     def forward_base(self, sub, rel, drop1, drop2, neg_ents=None):
         # init all relation embeddings
@@ -41,15 +51,15 @@ class GCNEncoder(torch.nn.Module):
             else torch.cat([self.init_rel, -self.init_rel], dim=0)
 
         # Graph convolution layer 1
-        ent_conv1, r = self.conv1(self.init_embed, rel_embed=r, sub=sub, rel=rel, neg_ents=neg_ents)
+        ent_conv1 = self.conv1(self.init_embed, neg_ents=neg_ents)
         ent_conv1 = drop1(ent_conv1)
         # Graph convolution layer 2 if corresponding hyper parameter is set
-        ent_conv2, r = self.conv2(ent_conv1, rel_embed=r, sub=sub, rel=rel, neg_ents=neg_ents) \
-            if self.p.gcn_layer == 2 \
-            else (ent_conv1, r)
+        ent_conv2 = self.conv2(ent_conv1, neg_ents=neg_ents) if self.p.gcn_layer == 2 else ent_conv1
         ent_conv2 = drop2(ent_conv2) if self.p.gcn_layer == 2 else ent_conv1
-        if self.p.model == 'gen_rgcn':
+
+        if self.p.model == 'hyper_gcn' and self.p.hyper_conv:
             r = r.mm(self.w_rel)
+
         # select embeddings of entities and relations involved in current batch
         sub_emb = torch.index_select(ent_conv2, 0, sub)
         rel_emb = torch.index_select(r, 0, rel)

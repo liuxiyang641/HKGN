@@ -117,6 +117,12 @@ The learned model will be automatically saved in directory `/checkpoints`, pass 
 -restore -name your_saved_model_name
 ```
 
+Choose specific data file as the test set by setting `-test_data`.
+
+```bash
+-test_data test(defalut)/1-n/n-1/.../ent100/..
+```
+
 ## Distribution statistics
 
 Statistics of different relation categories on FB15k-237:

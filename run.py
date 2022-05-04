@@ -1,3 +1,5 @@
+import math
+
 from data_process.data_loader import *
 
 from model.encoder_decoder import *
@@ -49,7 +51,7 @@ class Runner(object):
         self.data = ddict(list)
         sr2o = ddict(set)
         # sr2o contains original and inverse edges in train set.
-        for split in ['train', 'test', 'valid']:
+        for split in ['train', self.p.test_data, 'valid']:
             for line in open('./data/{}/{}.txt'.format(self.p.dataset, split)):
                 sub, rel, obj = map(str.lower, line.strip().split('\t'))
                 sub, rel, obj = self.ent2id[sub], self.rel2id[rel], self.ent2id[obj]
@@ -104,8 +106,6 @@ class Runner(object):
 
         if self.p.strategy == 'one_to_batch_n':
             collate_fn = partial(TrainDataset.batch_collate_fn, p=self.p)
-        elif self.p.strategy == 'nscaching':
-            collate_fn = partial(TrainDataset.ns_collate_fn, p=self.p)
         elif self.p.strategy == 'one_to_x' or self.p.strategy == 'one_to_n':
             collate_fn = TrainDataset.collate_fn
         else:
@@ -122,7 +122,7 @@ class Runner(object):
             'valid_head': get_data_loader(TestDataset, 'valid_head', self.p.test_batch_size),
             'valid_tail': get_data_loader(TestDataset, 'valid_tail', self.p.test_batch_size),
             'test_head': get_data_loader(TestDataset, self.p.test_data + '_head', self.p.test_batch_size),
-            'test_tail': get_data_loader(TestDataset, self.p.test_data + 'tail', self.p.test_batch_size),
+            'test_tail': get_data_loader(TestDataset, self.p.test_data + '_tail', self.p.test_batch_size),
         }
 
         self.edge_index, self.edge_type = self.construct_adj()
@@ -241,9 +241,6 @@ class Runner(object):
             elif self.p.strategy == 'one_to_batch_n':
                 triple, label, batch_ent = [_.to(self.device) for _ in batch]
                 return triple[:, 0], triple[:, 1], triple[:, 2], label, batch_ent
-            elif self.p.strategy == 'nscaching':
-                triple, label, pos_ent = [_.to(self.device) for _ in batch]
-                return triple[:, 0], triple[:, 1], triple[:, 2], label, pos_ent
             else:
                 triple, label = [_.to(self.device) for _ in batch]
                 return triple[:, 0], triple[:, 1], triple[:, 2], label, None
@@ -401,10 +398,11 @@ class Runner(object):
             loss.backward()
             self.optimizer.step()
             losses.append(loss.item())
-            if self.p.log_gpu_mem and torch.cuda.is_available():
-                self.logger.info('Memory allocated {} bytes\n'.format(torch.cuda.max_memory_allocated()))
-                self.logger.info('Memory reserved {} bytes\n'.format(torch.cuda.memory_reserved()))
             # torch.cuda.empty_cache()
+        if self.p.log_gpu_mem and torch.cuda.is_available():
+            self.logger.info(
+                'Memory allocated {} GB\n'.format(torch.cuda.max_memory_allocated() / math.pow(1024, 3)))
+            self.logger.info('Memory reserved {} GB\n'.format(torch.cuda.memory_reserved() / math.pow(1024, 3)))
         loss = np.mean(losses)
         self.logger.info('[Epoch:{}]:  Training Loss:{:.4}\n'.format(epoch, loss))
         return loss
@@ -463,9 +461,9 @@ if __name__ == '__main__':
     parser.add_argument('-test_data', default='test', help=r'The data file(.txt) used to test the model\'s performance')
     parser.add_argument('-gamma', type=float, default=40.0, help='Margin')
     parser.add_argument('-gpu', type=str, default='0', help='Set GPU Ids : Eg: For CPU = -1, For Single GPU = 0')
-    parser.add_argument('-empty_gpu_cache', dest='empty_gpu_cache', help='Whether to empty the GPU memory cached by '
-                                                                         'pytorch')
-    parser.add_argument('-epoch', dest='max_epochs', type=int, default=500, help='Number of epochs')
+    parser.add_argument('-empty_gpu_cache', dest='empty_gpu_cache', action='store_true',
+                        help='Whether to empty the GPU memory cached by pytorch')
+    parser.add_argument('-epoch', dest='max_epochs', type=int, default=1200, help='Number of epochs')
     parser.add_argument('-l2', type=float, default=0.0, help='L2 Regularization for Optimizer')
     parser.add_argument('-lr', type=float, default=0.001, help='Starting Learning Rate')
     parser.add_argument('-lbl_smooth', dest='lbl_smooth', type=float, default=0.1, help='Label Smoothing')
@@ -502,7 +500,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-config', dest='config_dir', default='./config/', help='Config directory')
     parser.add_argument('-log_dir', dest='log_dir', default='./log/', help='Log directory')
-    parser.add_argument('-log_gpu_mem', dest='log_gpu_mem', help='Whether to print allocated GPU memory')
+    parser.add_argument('-log_gpu_mem', dest='log_gpu_mem', action='store_true',
+                        help='Whether to print allocated GPU memory')
 
     # HKGN related hyperparameters
     parser.add_argument('-exp', dest='experiment', default='hyper_mr_parallel',

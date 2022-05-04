@@ -70,9 +70,9 @@ class HyperGCNConv(torch.nn.Module):
             if self.p.hyper_comp:
                 self.dy_size = dy_size
                 self.w_rel_coff = get_param((2 * self.num_rels + 1, self.dy_size))
-                self.w_global = get_param((self.dy_size, self.flatten_size * out_channels))
+                self.w_global = get_param((self.dy_size, self.flatten_size, out_channels))
             else:
-                self.w_global = get_param((self.num_rels * 2 + 1, self.dy_size, self.flatten_size * out_channels))
+                self.w_global = get_param((self.num_rels * 2 + 1, self.dy_size, self.flatten_size, out_channels))
         else:
             raise NotImplementedError
 

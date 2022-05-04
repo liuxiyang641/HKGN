@@ -109,6 +109,8 @@ Customize the training strategies (**parallel** and **iterative**) for multi-rel
 - `hyper_mr_parallel`: Performing all single-relational graph convolution simultaneously (default). High GPU memory footprints and quick training speed.
 - `hyper_mr_iter`: Performing different single-relational graph convolution iteratively. Lower GPU memory requirements and slower training speed.
 
+Print the maximum GPU memory allocated by setting the argument `-log_gpu_mem`.
+
 If you got out of memory error, try to clear cached memory by passing the argument: `-empty_gpu_cache`.
 
 The learned model will be automatically saved in directory `/checkpoints`, pass the argument `-restore` to resume your saved model, e.g.:

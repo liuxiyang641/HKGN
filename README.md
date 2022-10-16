@@ -1,7 +1,7 @@
 # Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding
 
 ## Overview
-The source code for **HKGN: Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding**.
+The source code for **HKGN: Heterogeneous Graph Neural Network with Hypernetworks for Knowledge Graph Embedding ISWC 22**.
 
 ```
 ├── model
@@ -157,3 +157,6 @@ Statistics of different degree scopes on WN18RR:
 |        [25, 50)        |    243    |  47   |
 |       [50, 100)        |    65     |  29   |
 |       [100, 500)       |    36     |  46   |
+
+## Acknowledge
+The project is derived from [COMPGCN](https://github.com/malllabiisc/CompGCN)

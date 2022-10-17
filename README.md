@@ -158,5 +158,5 @@ Statistics of different degree scopes on WN18RR:
 |       [50, 100)        |    65     |  29   |
 |       [100, 500)       |    36     |  46   |
 
-## Acknowledge
-The project is derived from [COMPGCN](https://github.com/malllabiisc/CompGCN)
+## Acknowledgment
+Our project is based on [COMPGCN](https://github.com/malllabiisc/CompGCN)
